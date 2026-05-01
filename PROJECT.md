@@ -73,7 +73,9 @@
 - [x] 全站 Cache（in-memory，盤中 30s TTL，收盤後 8 小時）
 
 #### Frontend
-- [ ] API 串接層（`services/api.ts`）
+- [x] Setup（Navigation、Theme、套件安裝）
+- [x] Onboarding（3 頁、左右滑動、AsyncStorage 記錄）
+- [x] API 串接層（`services/api.ts`）
 - [ ] Tab 1 首頁（大盤概況 + 新聞）
 - [ ] Tab 2 股票（搜尋、熱門股票、個股頁）
 - [ ] Tab 3 倉位（持倉總覽、新增持倉、損益計算）
