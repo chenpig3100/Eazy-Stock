@@ -1,8 +1,9 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import { getFocusedRouteNameFromRoute } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors } from '../constants/colors'
-import { TabParamList, StocksStackParamList } from '../types/navigation'
+import { TabParamList, HomeStackParamList, StocksStackParamList } from '../types/navigation'
 
 import HomeScreen from '../screens/Home/HomeScreen'
 import StocksScreen from '../screens/stocks/StocksScreen'
@@ -13,7 +14,17 @@ import AlertsScreen from '../screens/alerts/AlertsScreen'
 import SettingsScreen from '../screens/Settings/SettingsScreen'
 
 const Tab = createBottomTabNavigator<TabParamList>()
+const HomeStack = createNativeStackNavigator<HomeStackParamList>()
 const StocksStack = createNativeStackNavigator<StocksStackParamList>()
+
+function HomeNavigator() {
+  return (
+    <HomeStack.Navigator screenOptions={{ headerShown: false }}>
+      <HomeStack.Screen name="HomeMain" component={HomeScreen} />
+      <HomeStack.Screen name="NewsWebView" component={NewsWebViewScreen} />
+    </HomeStack.Navigator>
+  )
+}
 
 function StocksNavigator() {
   return (
@@ -32,7 +43,9 @@ export default function TabNavigator() {
         headerShown: false,
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.textSecondary,
-        tabBarStyle: { backgroundColor: Colors.surface, borderTopColor: Colors.border },
+        tabBarStyle: getFocusedRouteNameFromRoute(route) === 'NewsWebView'
+          ? { display: 'none' }
+          : { backgroundColor: Colors.surface, borderTopColor: Colors.border },
         tabBarIcon: ({ focused, color, size }) => {
           const icons: Record<string, [string, string]> = {
             Home:      ['home', 'home-outline'],
@@ -46,7 +59,7 @@ export default function TabNavigator() {
         },
       })}
     >
-      <Tab.Screen name="Home"      component={HomeScreen}        options={{ tabBarLabel: '首頁' }} />
+      <Tab.Screen name="Home"      component={HomeNavigator}     options={{ tabBarLabel: '首頁' }} />
       <Tab.Screen name="Stocks"    component={StocksNavigator}   options={{ tabBarLabel: '股票' }} />
       <Tab.Screen name="Portfolio" component={PortfolioScreen}   options={{ tabBarLabel: '倉位' }} />
       <Tab.Screen name="Alerts"    component={AlertsScreen}      options={{ tabBarLabel: '警示' }} />

@@ -6,6 +6,13 @@ export const getStock = async (symbol: string): Promise<Stock> => {
   return data
 }
 
+export const searchStocks = async (query: string): Promise<{ symbol: string; name: string }[]> => {
+  const { data } = await api.get<{ symbol: string; name: string }[]>('/stocks/search', {
+    params: { q: query },
+  })
+  return data
+}
+
 export const getStockNews = async (symbol: string, name: string = ''): Promise<NewsResponse> => {
   const { data } = await api.get<NewsResponse>(`/news/${symbol}`, {
     params: name ? { name } : undefined,

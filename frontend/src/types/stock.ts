@@ -37,6 +37,24 @@ export interface MarketOverview {
   volume: number
 }
 
+export interface Holding {
+  id: string
+  symbol: string
+  name: string
+  buyPrice: number
+  quantity: number
+  buyDate: string
+}
+
+export interface StockAlert {
+  id: string
+  symbol: string
+  name: string
+  targetPrice: number
+  direction: 'above' | 'below'
+  createdAt: string
+}
+
 export interface AIAnalyzeRequest {
   symbol?: string
   name?: string

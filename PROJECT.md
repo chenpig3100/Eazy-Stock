@@ -76,13 +76,12 @@
 - [x] Setup（Navigation、Theme、套件安裝）
 - [x] Onboarding（3 頁、左右滑動、AsyncStorage 記錄）
 - [x] API 串接層（`services/api.ts`）
-- [ ] Tab 1 首頁（大盤概況 + 新聞）
-- [ ] Tab 2 股票（搜尋、熱門股票、個股頁）
-- [ ] Tab 3 倉位（持倉總覽、新增持倉、損益計算）
-- [ ] Tab 4 警示（警示列表、推播通知）
-- [ ] Tab 5 設定（字體大小、語言、隱私政策）
+- [x] Tab 1 首頁（大盤概況 + 新聞）
+- [x] Tab 2 股票（搜尋、熱門股票、個股頁）
+- [x] Tab 3 倉位（持倉總覽、新增持倉、損益計算）
+- [x] Tab 4 警示（警示列表、推播通知）
+- [x] Tab 5 設定（帳號區塊、字體大小、語言、關於）
 - [ ] 全域 AI FAB + Chat Room Bottom Sheet
-- [ ] Onboarding（首次啟動 3 頁）
 
 ### Phase 4 — Testing
 Unit tests, integration tests, TestFlight beta, device compatibility
