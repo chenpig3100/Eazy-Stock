@@ -1,7 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import {
-  View, Text, FlatList, TouchableOpacity,
-  RefreshControl, ActivityIndicator,
+  View, Text, FlatList, TouchableOpacity, RefreshControl,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -10,29 +9,12 @@ import { Colors } from '../../constants/colors'
 import { MarketOverview, NewsArticle } from '../../types/stock'
 import { HomeStackParamList } from '../../types/navigation'
 import { getMarketOverview, getMarketNews } from '../../services/marketService'
+import NewsCard from '../../components/NewsCard'
+import LoadingCenter from '../../components/LoadingCenter'
 import styles from './HomeScreen.styles'
 
 type Props = {
   navigation: NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>
-}
-
-const SOURCE_COLORS = ['#FF9500', '#5856D6', '#007AFF', '#AF52DE', '#FF6B35', '#32ADE6']
-
-function sourceColor(source: string): string {
-  let h = 0
-  for (const c of source) h = (h * 31 + c.charCodeAt(0)) & 0xffff
-  return SOURCE_COLORS[h % SOURCE_COLORS.length]
-}
-
-function formatTime(dateStr: string): string {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return ''
-  const now = new Date()
-  if (d.toDateString() === now.toDateString()) {
-    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-  }
-  return `${d.getMonth() + 1}/${d.getDate()}`
 }
 
 export default function HomeScreen({ navigation }: Props) {
@@ -71,24 +53,6 @@ export default function HomeScreen({ navigation }: Props) {
     ? market.change > 0 ? Colors.positive : market.change < 0 ? Colors.negative : Colors.neutral
     : Colors.neutral
 
-  const renderNewsItem = ({ item }: { item: NewsArticle }) => (
-    <TouchableOpacity
-      style={styles.newsItem}
-      activeOpacity={0.7}
-      onPress={() => navigation.navigate('NewsWebView', { url: item.url, title: item.title })}
-    >
-      <View style={styles.newsTop}>
-        {item.source ? (
-          <View style={[styles.sourceTag, { backgroundColor: sourceColor(item.source) }]}>
-            <Text style={styles.sourceText} numberOfLines={1}>{item.source}</Text>
-          </View>
-        ) : null}
-        <Text style={styles.newsTime}>{formatTime(item.publishedAt)}</Text>
-      </View>
-      <Text style={styles.newsTitle} numberOfLines={2}>{item.title}</Text>
-    </TouchableOpacity>
-  )
-
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.header}>
@@ -99,9 +63,7 @@ export default function HomeScreen({ navigation }: Props) {
       </View>
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-        </View>
+        <LoadingCenter />
       ) : error ? (
         <View style={styles.center}>
           <Text style={styles.errorText}>{error}</Text>
@@ -113,7 +75,12 @@ export default function HomeScreen({ navigation }: Props) {
         <FlatList
           data={news}
           keyExtractor={(_, i) => String(i)}
-          renderItem={renderNewsItem}
+          renderItem={({ item }) => (
+            <NewsCard
+              item={item}
+              onPress={() => navigation.navigate('NewsWebView', { url: item.url, title: item.title })}
+            />
+          )}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={Colors.primary} />}

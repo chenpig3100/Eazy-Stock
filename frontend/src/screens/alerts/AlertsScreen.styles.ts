@@ -94,36 +94,4 @@ export default StyleSheet.create({
     fontWeight: '600',
     color: Colors.textPrimary,
   },
-  // swipe delete action
-  deleteAction: {
-    backgroundColor: '#FF3B30',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 80,
-    marginBottom: 10,
-    borderRadius: 14,
-  },
-  deleteText: {
-    color: '#fff',
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  // empty state
-  emptyContainer: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 12,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: Colors.textPrimary,
-  },
-  emptySubText: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    paddingHorizontal: 40,
-  },
 })

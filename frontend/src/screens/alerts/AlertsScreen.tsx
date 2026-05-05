@@ -9,6 +9,8 @@ import { Swipeable } from 'react-native-gesture-handler'
 import { Colors } from '../../constants/colors'
 import { StockAlert } from '../../types/stock'
 import { getAlerts, deleteAlert } from '../../services/alertsService'
+import SwipeDeleteAction from '../../components/SwipeDeleteAction'
+import EmptyState from '../../components/EmptyState'
 import AddAlertModal from './AddAlertModal'
 import styles from './AlertsScreen.styles'
 
@@ -40,12 +42,6 @@ export default function AlertsScreen() {
     setAlerts(prev => prev.filter(a => a.id !== id))
   }
 
-  const renderRightActions = (id: string) => (
-    <TouchableOpacity style={styles.deleteAction} onPress={() => handleDelete(id)}>
-      <Ionicons name="trash-outline" size={20} color="#fff" />
-      <Text style={styles.deleteText}>刪除</Text>
-    </TouchableOpacity>
-  )
 
   const renderItem = ({ item }: { item: StockAlert }) => {
     const isAbove = item.direction === 'above'
@@ -57,7 +53,7 @@ export default function AlertsScreen() {
             if (ref) swipeRefs.current.set(item.id, ref)
             else swipeRefs.current.delete(item.id)
           }}
-          renderRightActions={() => renderRightActions(item.id)}
+          renderRightActions={() => <SwipeDeleteAction onDelete={() => handleDelete(item.id)} borderRadius={14} />}
           rightThreshold={40}
           overshootRight={false}
         >
@@ -98,11 +94,12 @@ export default function AlertsScreen() {
       </View>
 
       {alerts.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="notifications-outline" size={56} color={Colors.border} />
-          <Text style={styles.emptyTitle}>尚無價格警示</Text>
-          <Text style={styles.emptySubText}>點右上角「+」新增警示，達到目標價時通知你</Text>
-        </View>
+        <EmptyState
+          icon="notifications-outline"
+          iconSize={56}
+          title="尚無價格警示"
+          subtitle="點右上角「+」新增警示，達到目標價時通知你"
+        />
       ) : (
         <FlatList
           data={alerts}

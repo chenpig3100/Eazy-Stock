@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import {
-  View, Text, FlatList, TouchableOpacity, ActivityIndicator,
+  View, Text, FlatList, TouchableOpacity,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
@@ -11,26 +11,10 @@ import { Stock, NewsArticle } from '../../types/stock'
 import { StocksStackParamList } from '../../types/navigation'
 import { getStock, getStockNews } from '../../services/stockService'
 import { getFavorites, toggleFavorite } from '../../services/favoritesService'
+import { useAIContext } from '../../stores/aiContextStore'
+import NewsCard from '../../components/NewsCard'
+import LoadingCenter from '../../components/LoadingCenter'
 import styles from './StockDetailScreen.styles'
-
-const SOURCE_COLORS = ['#FF9500', '#5856D6', '#007AFF', '#AF52DE', '#FF6B35', '#32ADE6']
-
-function sourceColor(source: string): string {
-  let h = 0
-  for (const c of source) h = (h * 31 + c.charCodeAt(0)) & 0xffff
-  return SOURCE_COLORS[h % SOURCE_COLORS.length]
-}
-
-function formatTime(dateStr: string): string {
-  if (!dateStr) return ''
-  const d = new Date(dateStr)
-  if (isNaN(d.getTime())) return ''
-  const now = new Date()
-  if (d.toDateString() === now.toDateString()) {
-    return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-  }
-  return `${d.getMonth() + 1}/${d.getDate()}`
-}
 
 type Props = {
   navigation: NativeStackNavigationProp<StocksStackParamList, 'StockDetail'>
@@ -44,16 +28,28 @@ export default function StockDetailScreen({ navigation, route }: Props) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [isFavorite, setIsFavorite] = useState(false)
+  const setAIContext = useAIContext(s => s.setContext)
 
   useEffect(() => {
     Promise.all([getStock(symbol), getStockNews(symbol, name)])
       .then(([stockData, newsData]) => {
         setStock(stockData)
         setNews(newsData.articles)
+        setAIContext({
+          symbol: stockData.symbol,
+          name: stockData.name,
+          price: stockData.price,
+          change: stockData.change,
+          changePercent: stockData.changePercent,
+          eps: stockData.eps,
+          dividendYield: stockData.dividendYield,
+          peRatio: stockData.peRatio,
+        })
       })
       .catch(() => setError('載入失敗，請稍後再試'))
       .finally(() => setLoading(false))
     getFavorites().then(favs => setIsFavorite(favs.some(f => f.symbol === symbol)))
+    return () => setAIContext(null)
   }, [symbol, name])
 
   const handleToggleFavorite = async () => {
@@ -63,24 +59,6 @@ export default function StockDetailScreen({ navigation, route }: Props) {
 
   const changeColor = (change: number) =>
     change > 0 ? Colors.positive : change < 0 ? Colors.negative : Colors.neutral
-
-  const renderNews = ({ item }: { item: NewsArticle }) => (
-    <TouchableOpacity
-      style={styles.newsItem}
-      activeOpacity={0.7}
-      onPress={() => navigation.navigate('NewsWebView', { url: item.url, title: item.title })}
-    >
-      <View style={styles.newsTop}>
-        {item.source ? (
-          <View style={[styles.sourceTag, { backgroundColor: sourceColor(item.source) }]}>
-            <Text style={styles.sourceText} numberOfLines={1}>{item.source}</Text>
-          </View>
-        ) : null}
-        <Text style={styles.newsTime}>{formatTime(item.publishedAt)}</Text>
-      </View>
-      <Text style={styles.newsTitle} numberOfLines={2}>{item.title}</Text>
-    </TouchableOpacity>
-  )
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
@@ -102,9 +80,7 @@ export default function StockDetailScreen({ navigation, route }: Props) {
       </View>
 
       {loading ? (
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-        </View>
+        <LoadingCenter />
       ) : error ? (
         <View style={styles.center}>
           <Text style={styles.errorText}>{error}</Text>
@@ -126,7 +102,12 @@ export default function StockDetailScreen({ navigation, route }: Props) {
         <FlatList
           data={news}
           keyExtractor={(_, i) => String(i)}
-          renderItem={renderNews}
+          renderItem={({ item }) => (
+            <NewsCard
+              item={item}
+              onPress={() => navigation.navigate('NewsWebView', { url: item.url, title: item.title })}
+            />
+          )}
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
           ListHeaderComponent={

@@ -2,7 +2,8 @@ import { useState, useEffect } from 'react'
 import {
   Modal, View, Text, TextInput, TouchableOpacity,
   ActivityIndicator, KeyboardAvoidingView, Platform,
-  ScrollView,
+  ScrollView, Animated,
+  TouchableWithoutFeedback, StyleSheet,
 } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { Colors } from '../../constants/colors'
@@ -10,27 +11,10 @@ import { StockAlert } from '../../types/stock'
 import { FavoriteStock, getFavorites } from '../../services/favoritesService'
 import { getStock } from '../../services/stockService'
 import { addAlert, getAlerts, requestNotificationPermission } from '../../services/alertsService'
+import { LOCAL_STOCKS } from '../../constants/stocks'
+import { normalize } from '../../utils/string'
+import { useDraggableSheet } from '../../hooks/useDraggableSheet'
 import styles from './AddAlertModal.styles'
-
-const LOCAL_STOCKS: { symbol: string; name: string }[] = [
-  { symbol: '2330', name: '台積電' }, { symbol: '2317', name: '鴻海' },
-  { symbol: '2454', name: '聯發科' }, { symbol: '0050', name: '元大台灣50' },
-  { symbol: '0056', name: '元大高股息' }, { symbol: '2412', name: '中華電' },
-  { symbol: '2308', name: '台達電' }, { symbol: '2882', name: '國泰金' },
-  { symbol: '2303', name: '聯電' }, { symbol: '2002', name: '中鋼' },
-  { symbol: '2886', name: '兆豐金' }, { symbol: '2891', name: '中信金' },
-  { symbol: '3008', name: '大立光' }, { symbol: '2881', name: '富邦金' },
-  { symbol: '2884', name: '玉山金' }, { symbol: '2892', name: '第一金' },
-  { symbol: '2880', name: '華南金' }, { symbol: '1301', name: '台塑' },
-  { symbol: '1303', name: '南亞' }, { symbol: '2357', name: '華碩' },
-  { symbol: '2382', name: '廣達' }, { symbol: '3711', name: '日月光投控' },
-  { symbol: '2379', name: '瑞昱' }, { symbol: '6505', name: '台塑化' },
-  { symbol: '2395', name: '研華' },
-]
-
-function normalize(s: string) {
-  return s.toLowerCase().replace(/\s/g, '')
-}
 
 type Props = {
   visible: boolean
@@ -48,6 +32,16 @@ export default function AddAlertModal({ visible, onClose, onAdded }: Props) {
   const [submitting, setSubmitting] = useState(false)
   const [favorites, setFavorites] = useState<FavoriteStock[]>([])
 
+  const {
+    slideAnim, clampedDragY, backdropOpacity,
+    panHandlers, animateOpen, animateClose, closeRef,
+  } = useDraggableSheet({ springBounciness: 2 })
+
+  useEffect(() => {
+    if (!visible) return
+    animateOpen()
+  }, [visible])
+
   useEffect(() => {
     if (visible) getFavorites().then(setFavorites)
   }, [visible])
@@ -57,7 +51,8 @@ export default function AddAlertModal({ visible, onClose, onAdded }: Props) {
     setTargetPrice(''); setSubmitError('')
   }
 
-  const handleClose = () => { reset(); onClose() }
+  const handleClose = () => animateClose(() => { reset(); onClose() })
+  closeRef.current = handleClose
 
   const handleSymbolChange = (t: string) => {
     setSymbol(t)
@@ -71,10 +66,8 @@ export default function AddAlertModal({ visible, onClose, onAdded }: Props) {
   const handleLookup = async () => {
     const sym = symbol.trim().toUpperCase()
     if (!sym) return
-
     const local = LOCAL_STOCKS.find(s => s.symbol === sym)
     if (local) { setSymbol(local.symbol); setStockName(local.name); setSubmitError(''); return }
-
     setLookupLoading(true)
     setSubmitError('')
     try {
@@ -124,8 +117,7 @@ export default function AddAlertModal({ visible, onClose, onAdded }: Props) {
       }
       await addAlert(alert)
       if (isFirstAlert) await requestNotificationPermission()
-      reset()
-      onAdded()
+      animateClose(() => { reset(); onAdded() })
     } catch {
       setSubmitError('新增失敗，請再試一次')
     } finally {
@@ -134,12 +126,27 @@ export default function AddAlertModal({ visible, onClose, onAdded }: Props) {
   }
 
   return (
-    <Modal visible={visible} animationType="slide" transparent onRequestClose={handleClose}>
-      <View style={styles.overlay}>
-        <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={handleClose} />
-        <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+    <Modal visible={visible} animationType="none" transparent onRequestClose={handleClose}>
+      {/* Backdrop — fades on drag */}
+      <TouchableWithoutFeedback onPress={handleClose}>
+        <Animated.View
+          style={[StyleSheet.absoluteFillObject, { backgroundColor: 'rgba(0,0,0,0.4)', opacity: backdropOpacity }]}
+        />
+      </TouchableWithoutFeedback>
+
+      {/* Sheet — pushed up by keyboard */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1, justifyContent: 'flex-end' }}
+        pointerEvents="box-none"
+      >
+        <Animated.View style={{ transform: [{ translateY: Animated.add(slideAnim, clampedDragY) }] }}>
           <View style={styles.sheet}>
-            <View style={styles.handle} />
+            {/* Handle drag target */}
+            <View {...panHandlers} style={styles.handleArea}>
+              <View style={styles.handle} />
+            </View>
+
             <View style={styles.sheetHeader}>
               <Text style={styles.sheetTitle}>新增警示</Text>
               <TouchableOpacity style={styles.closeButton} onPress={handleClose}>
@@ -152,7 +159,6 @@ export default function AddAlertModal({ visible, onClose, onAdded }: Props) {
               keyboardShouldPersistTaps="handled"
               showsVerticalScrollIndicator={false}
             >
-              {/* 代號 + 名稱 + 查詢 同一行 */}
               <View>
                 <View style={styles.topRow}>
                   <View style={{ flex: 0.85 }}>
@@ -193,7 +199,6 @@ export default function AddAlertModal({ visible, onClose, onAdded }: Props) {
                 {submitError ? <Text style={[styles.errorText, { marginTop: 6 }]}>{submitError}</Text> : null}
               </View>
 
-              {/* 我的最愛 */}
               <View style={styles.favSection}>
                 <Text style={styles.fieldLabel}>我的最愛</Text>
                 {favorites.length === 0 ? (
@@ -201,11 +206,7 @@ export default function AddAlertModal({ visible, onClose, onAdded }: Props) {
                 ) : (
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.favScroll}>
                     {favorites.map(fav => (
-                      <TouchableOpacity
-                        key={fav.symbol}
-                        style={styles.favChip}
-                        onPress={() => handleFavTap(fav)}
-                      >
+                      <TouchableOpacity key={fav.symbol} style={styles.favChip} onPress={() => handleFavTap(fav)}>
                         <Text style={styles.favChipText}>{fav.name}</Text>
                       </TouchableOpacity>
                     ))}
@@ -213,7 +214,6 @@ export default function AddAlertModal({ visible, onClose, onAdded }: Props) {
                 )}
               </View>
 
-              {/* 目標價格 */}
               <View>
                 <Text style={styles.fieldLabel}>
                   目標價格（NT$）
@@ -257,8 +257,8 @@ export default function AddAlertModal({ visible, onClose, onAdded }: Props) {
               }
             </TouchableOpacity>
           </View>
-        </KeyboardAvoidingView>
-      </View>
+        </Animated.View>
+      </KeyboardAvoidingView>
     </Modal>
   )
 }

@@ -10,6 +10,9 @@ import { Colors } from '../../constants/colors'
 import { Holding } from '../../types/stock'
 import { getHoldings, deleteHolding } from '../../services/portfolioService'
 import { getStock } from '../../services/stockService'
+import SwipeDeleteAction from '../../components/SwipeDeleteAction'
+import EmptyState from '../../components/EmptyState'
+import LoadingCenter from '../../components/LoadingCenter'
 import AddHoldingModal from './AddHoldingModal'
 import styles from './PortfolioScreen.styles'
 
@@ -74,15 +77,9 @@ export default function PortfolioScreen() {
   const totalPnLPercent = totalCost > 0 ? (totalPnL / totalCost) * 100 : 0
   const hasPrices = holdings.some(h => h.currentPrice != null)
 
-  const renderRightActions = (id: string) => () => (
-    <TouchableOpacity style={styles.deleteAction} onPress={() => handleDelete(id)}>
-      <Ionicons name="trash-outline" size={22} color="#fff" />
-      <Text style={styles.deleteActionText}>刪除</Text>
-    </TouchableOpacity>
-  )
 
   const renderHolding = ({ item }: { item: HoldingWithPnL }) => (
-    <Swipeable renderRightActions={renderRightActions(item.id)} overshootRight={false}>
+    <Swipeable renderRightActions={() => <SwipeDeleteAction onDelete={() => handleDelete(item.id)} borderRadius={12} />} overshootRight={false}>
       <View style={styles.holdingCard}>
         <View style={styles.holdingContent}>
           <View style={styles.holdingLeft}>
@@ -130,18 +127,15 @@ export default function PortfolioScreen() {
       </View>
 
       {loading ? (
-        <View style={styles.emptyContainer}>
-          <ActivityIndicator size="large" color={Colors.primary} />
-        </View>
+        <LoadingCenter />
       ) : holdings.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="briefcase-outline" size={64} color={Colors.border} />
-          <Text style={styles.emptyTitle}>尚無持倉記錄</Text>
-          <Text style={styles.emptySubText}>點擊右上角 + 新增第一筆持倉</Text>
-          <TouchableOpacity style={styles.emptyButton} onPress={() => setShowModal(true)}>
-            <Text style={styles.emptyButtonText}>新增持倉</Text>
-          </TouchableOpacity>
-        </View>
+        <EmptyState
+          icon="briefcase-outline"
+          iconSize={64}
+          title="尚無持倉記錄"
+          subtitle="點擊右上角 + 新增第一筆持倉"
+          action={{ label: '新增持倉', onPress: () => setShowModal(true) }}
+        />
       ) : (
         <FlatList
           data={holdings}

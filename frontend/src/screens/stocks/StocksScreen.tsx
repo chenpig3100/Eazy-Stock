@@ -8,44 +8,16 @@ import { Ionicons } from '@expo/vector-icons'
 import { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useFocusEffect } from '@react-navigation/native'
 import { Colors } from '../../constants/colors'
+import { LOCAL_STOCKS } from '../../constants/stocks'
 import { StocksStackParamList } from '../../types/navigation'
 import { getStock, searchStocks } from '../../services/stockService'
 import { getFavorites, toggleFavorite } from '../../services/favoritesService'
+import { normalize } from '../../utils/string'
+import EmptyState from '../../components/EmptyState'
+import LoadingCenter from '../../components/LoadingCenter'
 import styles from './StocksScreen.styles'
 
-const ALL_STOCKS = [
-  { symbol: '2330', name: '台積電' },
-  { symbol: '2317', name: '鴻海' },
-  { symbol: '2454', name: '聯發科' },
-  { symbol: '0050', name: '元大台灣50' },
-  { symbol: '0056', name: '元大高股息' },
-  { symbol: '2412', name: '中華電' },
-  { symbol: '2308', name: '台達電' },
-  { symbol: '2882', name: '國泰金' },
-  { symbol: '2303', name: '聯電' },
-  { symbol: '2002', name: '中鋼' },
-  { symbol: '2886', name: '兆豐金' },
-  { symbol: '2891', name: '中信金' },
-  { symbol: '3008', name: '大立光' },
-  { symbol: '2881', name: '富邦金' },
-  { symbol: '2884', name: '玉山金' },
-  { symbol: '2892', name: '第一金' },
-  { symbol: '2880', name: '華南金' },
-  { symbol: '1301', name: '台塑' },
-  { symbol: '1303', name: '南亞' },
-  { symbol: '2357', name: '華碩' },
-  { symbol: '2382', name: '廣達' },
-  { symbol: '3711', name: '日月光投控' },
-  { symbol: '2379', name: '瑞昱' },
-  { symbol: '6505', name: '台塑化' },
-  { symbol: '2395', name: '研華' },
-]
-
-const POPULAR = ALL_STOCKS.slice(0, 8)
-
-function normalize(s: string) {
-  return s.toLowerCase().replace(/\s/g, '')
-}
+const POPULAR = LOCAL_STOCKS.slice(0, 8)
 
 function isChinese(s: string) {
   return /[一-鿿]/.test(s)
@@ -75,7 +47,7 @@ export default function StocksScreen({ navigation }: Props) {
   const filtered = useMemo(() => {
     const q = normalize(query.trim())
     if (!q) return POPULAR
-    return ALL_STOCKS.filter(s =>
+    return LOCAL_STOCKS.filter(s =>
       normalize(s.symbol).startsWith(q) || normalize(s.name).includes(q)
     )
   }, [query])
@@ -116,7 +88,7 @@ export default function StocksScreen({ navigation }: Props) {
     const q = normalize(t.trim())
     if (!q) { setBackendSearching(false); return }
 
-    const hasLocal = ALL_STOCKS.some(s =>
+    const hasLocal = LOCAL_STOCKS.some(s =>
       normalize(s.symbol).startsWith(q) || normalize(s.name).includes(q)
     )
     if (hasLocal) { setBackendSearching(false); return }
@@ -229,9 +201,7 @@ export default function StocksScreen({ navigation }: Props) {
 
       {noLocalResult ? (
         backendSearching ? (
-          <View style={styles.center}>
-            <ActivityIndicator size="large" color={Colors.primary} />
-          </View>
+          <LoadingCenter />
         ) : backendResults.length > 0 ? (
           <FlatList
             data={backendResults}
@@ -244,11 +214,12 @@ export default function StocksScreen({ navigation }: Props) {
           />
         ) : (
           !searchError && (
-            <View style={styles.center}>
-              <Ionicons name="search-outline" size={52} color={Colors.border} />
-              <Text style={styles.emptyTitle}>查無符合結果</Text>
-              <Text style={styles.emptySubText}>請確認股票代號或名稱是否正確</Text>
-            </View>
+            <EmptyState
+              icon="search-outline"
+              iconSize={52}
+              title="查無符合結果"
+              subtitle="請確認股票代號或名稱是否正確"
+            />
           )
         )
       ) : (

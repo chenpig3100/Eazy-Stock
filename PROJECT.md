@@ -37,8 +37,8 @@
 **延後至 v2**
 - K 線圖
 - ETF 篩選
-- 模擬帳戶（紙上交易）
-- 社群討論整合（PTT/Dcard）
+- 帳號系統（Sign in with Apple）
+- 字體大小 / 外觀 / 語言設定
 - 新聞文章解析（用 `newspaper4k` 抓文章內文，取代 WebView，提供乾淨閱讀體驗，無廣告/Cookie 彈窗）
 
 **v2 AI 擴充（`AnalyzeRequest` 新增欄位）**
@@ -62,11 +62,12 @@
 ### Phase 2 — UI/UX Design ✅ 完成（2026-04-28）
 14 個畫面全部完成於 Figma。所有 Phase 1 設計原則達成。
 
-### Phase 3 — Development 🔄 進行中
+### Phase 3 — Development ✅ 完成 (2026-05-05)
 
 #### Backend
 - [x] FastAPI 專案初始化
 - [x] `GET /stocks/{symbol}` — Fugle 即時股價 + yfinance EPS/殖利率/本益比
+- [x] `GET /stocks/search` — TWSE/TPEx 中文名稱模糊搜尋
 - [x] `GET /news/{symbol}` — Google News RSS 個股新聞
 - [x] `GET /market/overview` — 大盤概況（加權指數）
 - [x] `POST /ai/analyze` — Claude API AI 白話分析
@@ -77,11 +78,12 @@
 - [x] Onboarding（3 頁、左右滑動、AsyncStorage 記錄）
 - [x] API 串接層（`services/api.ts`）
 - [x] Tab 1 首頁（大盤概況 + 新聞）
-- [x] Tab 2 股票（搜尋、熱門股票、個股頁）
+- [x] Tab 2 股票（搜尋代號 + 中文名稱、熱門股票、個股頁）
 - [x] Tab 3 倉位（持倉總覽、新增持倉、損益計算）
-- [x] Tab 4 警示（警示列表、推播通知）
-- [x] Tab 5 設定（帳號區塊、字體大小、語言、關於）
-- [ ] 全域 AI FAB + Chat Room Bottom Sheet
+- [x] Tab 4 警示（警示列表、新增警示、推播通知）
+- [x] Tab 5 設定（關於、通知設定跳轉）
+- [x] 全域 AI FAB + Chat Room Bottom Sheet（keyboard 自適應、Zustand context）
+- [x] 三個 Sheet 拖曳關閉手勢（handle 拉桿 + 背景淡出）
 
 ### Phase 4 — Testing
 Unit tests, integration tests, TestFlight beta, device compatibility
