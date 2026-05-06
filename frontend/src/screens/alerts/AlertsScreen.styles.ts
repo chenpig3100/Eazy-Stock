@@ -32,7 +32,6 @@ export default StyleSheet.create({
   },
   // alert card (inside swipeable)
   cardWrapper: {
-    marginBottom: 10,
     borderRadius: 14,
     overflow: 'hidden',
   },
@@ -41,6 +40,7 @@ export default StyleSheet.create({
     borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
+    marginBottom: 10,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',

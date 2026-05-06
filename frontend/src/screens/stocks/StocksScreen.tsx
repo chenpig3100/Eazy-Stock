@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo, useCallback } from 'react'
+import React, { useState, useRef, useMemo, useCallback } from 'react'
 import {
   View, Text, FlatList, TouchableOpacity,
   TextInput, ActivityIndicator,
@@ -35,12 +35,16 @@ export default function StocksScreen({ navigation }: Props) {
   const [backendResults, setBackendResults] = useState<StockItem[]>([])
   const [searchError, setSearchError] = useState('')
   const [favoriteSymbols, setFavoriteSymbols] = useState<Set<string>>(new Set())
+  const [watchlist, setWatchlist] = useState<StockItem[]>([])
   const inputRef = useRef<TextInput>(null)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useFocusEffect(
     useCallback(() => {
-      getFavorites().then(favs => setFavoriteSymbols(new Set(favs.map(f => f.symbol))))
+      getFavorites().then(favs => {
+        setFavoriteSymbols(new Set(favs.map(f => f.symbol)))
+        setWatchlist(favs)
+      })
     }, [])
   )
 
@@ -126,6 +130,9 @@ export default function StocksScreen({ navigation }: Props) {
       isNowFav ? next.add(item.symbol) : next.delete(item.symbol)
       return next
     })
+    setWatchlist(prev =>
+      isNowFav ? [...prev, item] : prev.filter(f => f.symbol !== item.symbol)
+    )
   }
 
   const goToDetail = (symbol: string, name: string) => {
@@ -228,9 +235,22 @@ export default function StocksScreen({ navigation }: Props) {
           keyExtractor={(item) => item.symbol}
           renderItem={renderRow}
           ListHeaderComponent={
-            <Text style={styles.sectionTitle}>
-              {isSearching ? '搜尋結果' : '熱門股票'}
-            </Text>
+            <>
+              {!isSearching && watchlist.length > 0 && (
+                <>
+                  <Text style={styles.sectionTitle}>關注中股票</Text>
+                  {watchlist.map(item => (
+                    <React.Fragment key={item.symbol}>
+                      {renderRow({ item })}
+                    </React.Fragment>
+                  ))}
+                  <View style={{ height: 8 }} />
+                </>
+              )}
+              <Text style={styles.sectionTitle}>
+                {isSearching ? '搜尋結果' : '熱門股票'}
+              </Text>
+            </>
           }
           contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}

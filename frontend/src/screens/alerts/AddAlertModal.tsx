@@ -27,6 +27,7 @@ export default function AddAlertModal({ visible, onClose, onAdded }: Props) {
   const [stockName, setStockName] = useState('')
   const [currentPrice, setCurrentPrice] = useState<number | null>(null)
   const [targetPrice, setTargetPrice] = useState('')
+  const [confirmed, setConfirmed] = useState(false)
   const [lookupLoading, setLookupLoading] = useState(false)
   const [submitError, setSubmitError] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -48,7 +49,7 @@ export default function AddAlertModal({ visible, onClose, onAdded }: Props) {
 
   const reset = () => {
     setSymbol(''); setStockName(''); setCurrentPrice(null)
-    setTargetPrice(''); setSubmitError('')
+    setTargetPrice(''); setSubmitError(''); setConfirmed(false)
   }
 
   const handleClose = () => animateClose(() => { reset(); onClose() })
@@ -63,11 +64,9 @@ export default function AddAlertModal({ visible, onClose, onAdded }: Props) {
     else setStockName('')
   }
 
-  const handleLookup = async () => {
+  const handleConfirm = async () => {
     const sym = symbol.trim().toUpperCase()
     if (!sym) return
-    const local = LOCAL_STOCKS.find(s => s.symbol === sym)
-    if (local) { setSymbol(local.symbol); setStockName(local.name); setSubmitError(''); return }
     setLookupLoading(true)
     setSubmitError('')
     try {
@@ -75,6 +74,7 @@ export default function AddAlertModal({ visible, onClose, onAdded }: Props) {
       setSymbol(stock.symbol)
       setStockName(stock.name)
       setCurrentPrice(stock.price)
+      setConfirmed(true)
     } catch {
       setSubmitError('找不到此股票，請確認代號是否正確')
     } finally {
@@ -82,10 +82,18 @@ export default function AddAlertModal({ visible, onClose, onAdded }: Props) {
     }
   }
 
+  const handleCancel = () => {
+    setConfirmed(false)
+    setSymbol('')
+    setStockName('')
+    setCurrentPrice(null)
+    setTargetPrice('')
+    setSubmitError('')
+  }
+
   const handleFavTap = (fav: FavoriteStock) => {
     setSymbol(fav.symbol)
     setStockName(fav.name)
-    setCurrentPrice(null)
     setSubmitError('')
   }
 
@@ -95,7 +103,7 @@ export default function AddAlertModal({ visible, onClose, onAdded }: Props) {
       ? targetNum > currentPrice ? 'above' : targetNum < currentPrice ? 'below' : null
       : null
 
-  const canSubmit = !!symbol && !!stockName && !!targetPrice && direction != null && !submitting
+  const canSubmit = confirmed && !!targetPrice && direction != null && !submitting
 
   const handleSubmit = async () => {
     if (!symbol || !stockName || isNaN(targetNum) || targetNum <= 0 || direction == null) {
@@ -164,7 +172,7 @@ export default function AddAlertModal({ visible, onClose, onAdded }: Props) {
                   <View style={{ flex: 0.85 }}>
                     <Text style={styles.fieldLabel}>代號</Text>
                     <TextInput
-                      style={styles.symbolInput}
+                      style={[styles.symbolInput, confirmed && { opacity: 0.5 }]}
                       placeholder="2330"
                       placeholderTextColor={Colors.textSecondary}
                       value={symbol}
@@ -172,12 +180,13 @@ export default function AddAlertModal({ visible, onClose, onAdded }: Props) {
                       autoCapitalize="characters"
                       autoCorrect={false}
                       returnKeyType="next"
+                      editable={!confirmed}
                     />
                   </View>
                   <View style={{ flex: 1.3 }}>
                     <Text style={styles.fieldLabel}>名稱</Text>
                     <TextInput
-                      style={styles.nameInput}
+                      style={[styles.nameInput, confirmed && { color: Colors.textSecondary }]}
                       placeholder="台積電"
                       placeholderTextColor={Colors.textSecondary}
                       value={stockName}
@@ -188,10 +197,14 @@ export default function AddAlertModal({ visible, onClose, onAdded }: Props) {
                   </View>
                   <View style={{ justifyContent: 'flex-end' }}>
                     <Text style={[styles.fieldLabel, { opacity: 0 }]}>查</Text>
-                    <TouchableOpacity style={styles.lookupButton} onPress={handleLookup} disabled={lookupLoading}>
+                    <TouchableOpacity
+                      style={[styles.lookupButton, confirmed && { backgroundColor: '#FF3B30' }]}
+                      onPress={confirmed ? handleCancel : handleConfirm}
+                      disabled={lookupLoading || (!confirmed && !symbol.trim())}
+                    >
                       {lookupLoading
                         ? <ActivityIndicator size="small" color="#fff" />
-                        : <Text style={styles.lookupButtonText}>查詢</Text>
+                        : <Text style={styles.lookupButtonText}>{confirmed ? '取消' : '確認'}</Text>
                       }
                     </TouchableOpacity>
                   </View>
@@ -200,13 +213,18 @@ export default function AddAlertModal({ visible, onClose, onAdded }: Props) {
               </View>
 
               <View style={styles.favSection}>
-                <Text style={styles.fieldLabel}>我的最愛</Text>
+                <Text style={styles.fieldLabel}>關注中股票</Text>
                 {favorites.length === 0 ? (
-                  <Text style={styles.favEmpty}>尚無最愛股票，可在股票頁點愛心新增</Text>
+                  <Text style={styles.favEmpty}>尚無關注股票，可在股票頁點愛心新增</Text>
                 ) : (
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.favScroll}>
                     {favorites.map(fav => (
-                      <TouchableOpacity key={fav.symbol} style={styles.favChip} onPress={() => handleFavTap(fav)}>
+                      <TouchableOpacity
+                        key={fav.symbol}
+                        style={[styles.favChip, confirmed && { opacity: 0.4 }]}
+                        onPress={() => handleFavTap(fav)}
+                        disabled={confirmed}
+                      >
                         <Text style={styles.favChipText}>{fav.name}</Text>
                       </TouchableOpacity>
                     ))}
@@ -217,17 +235,18 @@ export default function AddAlertModal({ visible, onClose, onAdded }: Props) {
               <View>
                 <Text style={styles.fieldLabel}>
                   目標價格（NT$）
-                  {currentPrice != null
+                  {confirmed && currentPrice != null
                     ? `　現價 ${currentPrice.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                    : '　（請先查詢股票取得現價）'}
+                    : ''}
                 </Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, !confirmed && { opacity: 0.4 }]}
                   placeholder="例：660.00"
                   placeholderTextColor={Colors.textSecondary}
                   value={targetPrice}
                   onChangeText={setTargetPrice}
                   keyboardType="decimal-pad"
+                  editable={confirmed}
                 />
                 {direction != null && (
                   <View style={styles.directionRow}>

@@ -196,9 +196,9 @@ export default function AddHoldingModal({ visible, onClose, onAdded }: Props) {
               </View>
 
               <View style={styles.favSection}>
-                <Text style={styles.fieldLabel}>我的最愛</Text>
+                <Text style={styles.fieldLabel}>關注中股票</Text>
                 {favorites.length === 0 ? (
-                  <Text style={styles.favEmpty}>尚無最愛股票，可在股票頁點愛心新增</Text>
+                  <Text style={styles.favEmpty}>尚無關注股票，可在股票頁點愛心新增</Text>
                 ) : (
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.favScroll}>
                     {favorites.map(fav => (
